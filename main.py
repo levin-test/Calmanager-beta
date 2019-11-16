@@ -1,5 +1,6 @@
 import os
 import datetime
+from db_manager import *
 
 
 class Food:
@@ -29,6 +30,21 @@ class Food:
         conn.commit()
         curs.close()
         conn.close()
+
+    def used_coefficient(self, coefficient):
+        self.cal *= coefficient
+        self.protein *= coefficient
+        self.fat *= coefficient
+        self.carbohydrate *= coefficient
+
+    def temp_use_coefficient(self, coefficient):
+        result = list(
+            map(
+                lambda x: x * coefficient,
+                [self.cal, self.protein, self.fat, self.carbohydrate],
+            )
+        )
+        return [self.name] + result
 
 
 class Meals:
