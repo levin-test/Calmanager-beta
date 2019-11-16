@@ -37,6 +37,7 @@ class Food:
         self.fat *= coefficient
         self.carbohydrate *= coefficient
 
+    # この関数は基本使用しない。将来的に削除する可能性あり。
     def temp_use_coefficient(self, coefficient):
         result = list(
             map(
