@@ -1,6 +1,6 @@
 import os
 import datetime
-from db_manager import *
+import sqlite3
 
 
 class Food:
@@ -10,6 +10,7 @@ class Food:
         self.protein = protein
         self.fat = fat
         self.carbohydrate = carbohydrate
+        # テスト用メッセージ
         print("food_init")
 
     def get_all_nutrition(self):
@@ -48,8 +49,37 @@ class Food:
         return [self.name] + result
 
 
-class Meals:
-    def __init__(self, date=None, food_id=0):
-        self.date = date
-        self.food_id = food_id
-        print("Meals_class_init")
+class FoodToday:
+    def __init__(self):
+        self.food_list = []
+        # 今日付けの食事データをすべて取得する
+        conn = sqlite3.connect(
+            "data/pfc_manageDB.sqlite",
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+        )
+        conn.row_factory = sqlite3.Row
+        curs = conn.cursor()
+
+        curs.execute(
+            """
+            SELECT * FROM meals
+            LEFT OUTER JOIN food
+            ON meals.food_id = food.id
+            WHERE meals.date = ?
+            """,
+            [datetime.date.today()],
+        )
+        temp_dict = curs.fetchall()
+        for one_row in temp_dict:
+            item = Food()
+            item.name = one_row["name"]
+            item.cal = one_row["cal"]
+            item.protein = one_row["protein"]
+            item.fat = one_row["fat"]
+            item.carbohydrate = one_row["carbohydrate"]
+            self.food_list.append(item)
+
+    # この関数は基本使用しない。将来的に削除する可能性あり。
+    def show_all(self):
+        for i in self.food_list:
+            print(i.name, i.cal, i.protein, i.fat, i.carbohydrate)
