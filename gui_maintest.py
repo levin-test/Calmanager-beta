@@ -1,6 +1,7 @@
 import sys
 import os
 from PySide2.QtWidgets import *
+import main
 from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QTableWidget
 
@@ -9,7 +10,7 @@ class Example(QMainWindow):
     def __init__(self):
         super().__init__()
         self.connected_dbname = ""
-        self.statusBar().showMessage("Ready")
+        self.statusBar().showMessage("Ready", 5000)
         self.setGeometry(20, 20, 900, 600)
 
         self.open_act = QAction(
@@ -38,11 +39,16 @@ class Example(QMainWindow):
     def change_window_title(self, filename):
         self.connected_dbname = filename
         filename = os.path.basename(filename)
-        if filename == "":
-            pass
-        else:
+        if filename != "":
             filename = "(" + filename + ")"
-        self.setWindowTitle("rabit{}".format(filename))
+            self.setWindowTitle("rabit{}".format(filename))
+            message = "Opened {} successfully!".format(os.path.basename(filename))
+            self.statusBar().showMessage(message, 5000)
+        else:
+            self.setWindowTitle("rabit{}".format(filename))
+            message = "Disconnected!"
+            self.statusBar().showMessage(message, 5000)
+
         print(filename)
 
 
@@ -51,17 +57,18 @@ class AllWithEventActions:
         self.root_widget = Example()
         self.root_widget.show()
         self.root_widget.open_act.triggered.connect(self.open)
+        self.root_widget.close_act.triggered.connect(self.close)
         self.root_widget.save_act.triggered.connect(self.save)
         self.root_widget.quit_act.triggered.connect(self.quit_app)
 
     def open(self):
-        print("opened")
+        # print("opened")
         select_file = QFileDialog.getOpenFileName(filter="SQLite Files (*.sqlite)")
         self.root_widget.change_window_title(select_file[0])
 
-    @classmethod
-    def close(cls):
-        print("closed")
+    def close(self):
+        # print("closed")
+        self.root_widget.change_window_title("")
 
     @classmethod
     def save(cls):
@@ -70,3 +77,4 @@ class AllWithEventActions:
     @classmethod
     def quit_app(cls):
         sys.exit()
+        
