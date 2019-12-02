@@ -6,12 +6,36 @@ from PySide2 import QtCore
 import sqlite3
 
 
+class Start:
+    def __init__(self):
+        self.root_window = Example()
+        self.root_window.show()
+
+
+class EnvInfo:
+    __connected_db_path = ""
+    @classmethod
+    def set_db_path(cls, db_path):
+        """
+        :param db_path: DB's full path
+        :type db_path: str
+        :return: None
+        """
+        cls.__connected_db_path = db_path
+
+    @classmethod
+    def get_db_path(cls):
+        """
+        :return: current db's full path
+        :rtype: str
+        """
+        return cls.__connected_db_path
+
+
 class Example(QMainWindow):
-    connected_dbname = ""
     def __init__(self):
         super().__init__()
-        # self.connected_dbname = ""
-        self.statusBar().showMessage("Ready", 5000)
+        self.statusBar().showMessage("Ready", 15000)
         self.setGeometry(20, 20, 1080, 750)
 
         # メニューバーにセットするアクションを準備
@@ -19,6 +43,11 @@ class Example(QMainWindow):
             self.style().standardIcon(QStyle.SP_DialogOpenButton), "Open", self
         )
         self.open_act.setShortcut("Ctrl+O")
+
+        self.open_recent_act = QAction(
+            self.style().standardIcon(QStyle.SP_DialogOpenButton), "Open Recent", self
+        )
+        self.open_recent_act.setShortcut("Ctrl+O")
 
         self.close_act = QAction(
             self.style().standardIcon(QStyle.SP_DirClosedIcon), "Close", self
@@ -31,6 +60,7 @@ class Example(QMainWindow):
         self.save_act.setShortcut("Ctrl+S")
 
         self.quit_act = QAction("Exit", self)
+        self.quit_act.setShortcut("Ctrl+Q")
 
         self.refresh_act = QAction("Refresh", self)
         self.refresh_act.setShortcut("Ctrl+R")
@@ -42,100 +72,126 @@ class Example(QMainWindow):
 
         # Menuをセットする
         self.menu_file.addAction(self.open_act)
+        self.open_act.triggered.connect(self.open)
+
         self.menu_file.addAction(self.close_act)
+        self.close_act.triggered.connect(self.close)
+
         self.menu_file.addAction(self.save_act)
+        self.save_act.triggered.connect(self.save)
+
         self.menu_file.addAction(self.quit_act)
+        self.quit_act.triggered.connect(self.quit)
 
         self.menu_action.addAction(self.refresh_act)
+        self.refresh_act.triggered.connect(self.refresh)
 
+        # タブを準備
         self.tab_widget = QTabWidget()
-        self.tab_widget.addTab(Tabtest(), "tabtest")
         self.tab_widget.addTab(TabAddData(), "AddData")
+        self.tab_widget.setTabEnabled(0, False)
         self.setCentralWidget(self.tab_widget)
 
-    def change_window_title(self, filename):
-        Example.connected_dbname = filename
-        filename = os.path.basename(filename)
-        if filename != "":
-            filename = "(" + filename + ")"
-            self.setWindowTitle("rabit{}".format(filename))
-            message = "Opened {} successfully!".format(os.path.basename(filename))
-            self.statusBar().showMessage(message, 5000)
-        else:
-            self.setWindowTitle("rabit{}".format(filename))
-            message = "Disconnected!"
-            self.statusBar().showMessage(message, 5000)
 
-    @classmethod
-    def db_path(cls):
-        return Example.connected_dbname
+    def change_window_title(self, file_path):
+        EnvInfo.set_db_path(file_path)
+        db_name = os.path.basename(file_path)
+        if db_name != "":
+            db_name = "(" + db_name + ")"
+            self.setWindowTitle("rabit{}".format(db_name))
+            message = "Opened {} successfully!".format(os.path.basename(db_name))
+            self.statusBar().showMessage(message, 15000)
+        else:
+            self.setWindowTitle("rabit{}".format(db_name))
+            message = "Disconnected!"
+            self.statusBar().showMessage(message, 15000)
+
+    def open(self):
+        select_file = QFileDialog.getOpenFileName(filter="SQLite Files (*.sqlite)")
+        self.change_window_title(select_file[0])
+        self.tab_widget.setTabEnabled(0, True)
+
+    def close(self):
+        self.change_window_title("")
+        a = self.tab_widget.findChild(TabAddData)
+        a.clear_content()
+        self.tab_widget.setTabEnabled(0, False)
+
+    def save(self):
+        print(self.currentIndex())
+
+    def refresh(self):
+        self.statusBar().showMessage("Refreshed!", 10000)
+
+    @staticmethod
+    def quit():
+        sys.exit()
+
 
 class Tabtest(QWidget):
     def __init__(self):
         super().__init__()
-        self.init_ui()
-
-    def init_ui(self):
         self.lbl_tab1 = QLabel(str(datetime.datetime.now()))
+
         self.btn_refresh = QPushButton("Now")
-        self.btn_refresh.move(50,50)
+        self.btn_refresh.move(50, 50)
         self.btn_refresh.clicked.connect(self.refresher)
-        horizon_box = QHBoxLayout()
+
         vertical_box = QVBoxLayout()
         vertical_box.addWidget(self.lbl_tab1)
         vertical_box.addWidget(self.btn_refresh)
+
         self.setLayout(vertical_box)
 
     def refresher(self):
-        strdate = datetime.datetime.now()
-        strdate = str(strdate)
-        self.lbl_tab1.setText(strdate)
-
-        # self.update()
+        str_date = datetime.datetime.now()
+        str_date = str(str_date)
+        self.lbl_tab1.setText(str_date)
 
 
 class TabAddData(QWidget):
     def __init__(self):
         super().__init__()
-        self.init_ui()
-
-    def init_ui(self):
-        label_a = QLabel("Name")
-        label_b = QLabel("kcal")
-        label_c = QLabel("protein")
-        label_d = QLabel("fat")
-        label_e = QLabel("carbo")
+        self.label_a = QLabel("Name")
+        self.label_b = QLabel("kcal")
+        self.label_c = QLabel("protein")
+        self.label_d = QLabel("fat")
+        self.label_e = QLabel("carbo")
         self.edit_a = QLineEdit()
         self.edit_b = QLineEdit()
         self.edit_c = QLineEdit()
         self.edit_d = QLineEdit()
         self.edit_e = QLineEdit()
         format_layout = QFormLayout()
-        format_layout.addRow(label_a, self.edit_a)
-        format_layout.addRow(label_b, self.edit_b)
-        format_layout.addRow(label_c, self.edit_c)
-        format_layout.addRow(label_d, self.edit_d)
-        format_layout.addRow(label_e, self.edit_e)
+        format_layout.addRow(self.label_a, self.edit_a)
+        format_layout.addRow(self.label_b, self.edit_b)
+        format_layout.addRow(self.label_c, self.edit_c)
+        format_layout.addRow(self.label_d, self.edit_d)
+        format_layout.addRow(self.label_e, self.edit_e)
 
         btn_register = QPushButton("Register")
-        btn_register.clicked.connect(self.touroku)
+        btn_register.clicked.connect(self.register)
         btn_register.setMaximumSize(100, 50)
+
+        btn_clear = QPushButton("Clear")
+        btn_clear.clicked.connect(self.clear_content)
+
         vertical_box = QVBoxLayout()
         vertical_box.addWidget(btn_register, alignment=QtCore.Qt.AlignRight)
+
         root = QVBoxLayout()
         root.addLayout(format_layout)
         root.addLayout(vertical_box)
         self.setLayout(root)
 
-    def touroku(self):
+    def register(self):
         input_name = self.edit_a.text()
         input_cal = int(self.edit_b.text())
         input_pro = int(self.edit_c.text())
         input_fat = int(self.edit_d.text())
         input_carbo = int(self.edit_e.text())
         food = Food(input_name, input_cal, input_pro, input_fat, input_carbo)
-        # food.save_food_info('data/pfc_manageDB.sqlite')
-        food.save_food_info(Example.connected_dbname)
+        food.save_food_info(EnvInfo.get_db_path())
         self.clear_content()
 
     def clear_content(self):
@@ -144,48 +200,6 @@ class TabAddData(QWidget):
         self.edit_c.setText(None)
         self.edit_d.setText(None)
         self.edit_e.setText(None)
-
-
-
-
-class AllWithEventActions:
-    def __init__(self):
-        self.root_widget = Example()
-        self.root_widget.show()
-        self.root_widget.open_act.triggered.connect(self.open)
-        self.root_widget.close_act.triggered.connect(self.close)
-        self.root_widget.save_act.triggered.connect(self.save)
-        self.root_widget.refresh_act.triggered.connect(self.refresh)
-        self.root_widget.quit_act.triggered.connect(self.quit_app)
-
-    def open(self):
-        select_file = QFileDialog.getOpenFileName(filter="SQLite Files (*.sqlite)")
-        self.root_widget.change_window_title(select_file[0])
-
-    def close(self):
-        # print("closed")
-        self.root_widget.change_window_title("")
-
-    def save(self):
-        print("saved")
-        print(self.root_widget.tab_widget.currentIndex())
-
-    def refresh(self):
-        # self.root_widget.tab_widget.refresher()
-        self.root_widget.tab_widget.init_ui()
-        self.root_widget.statusBar().showMessage("Refreshed!", 7500)
-
-    def get_db_path(self):
-        return self.root_widget.connected_dbname
-
-    @classmethod
-    def quit_app(cls):
-        sys.exit()
-
-# def set_db(db_name):
-#     global curr_db_path
-#     curr_path = os.getcwd()
-#     curr_db_path = os.path.join(curr_path, "data", db_name)
 
 
 class Food:
@@ -201,6 +215,11 @@ class Food:
         return self.protein, self.fat, self.carbohydrate
 
     def save_food_info(self, curr_db_path):
+        """
+        :param curr_db_path: target db path
+        :type curr_db_path: str
+        :return: None
+        """
         # TODO: Use "with"
         conn = sqlite3.connect(curr_db_path)
         curs = conn.cursor()
@@ -213,6 +232,7 @@ class Food:
             [self.name, self.cal, self.protein, self.fat, self.carbohydrate],
         )
         conn.commit()
+
         curs.close()
         conn.close()
 
@@ -235,6 +255,7 @@ class Food:
 
 class FoodToday:
     def __init__(self):
+        # 今日の食事を格納するためのリストを準備
         self.food_list = []
         # 今日付けの食事データをすべて取得する
         conn = sqlite3.connect(
@@ -267,6 +288,9 @@ class FoodToday:
 
     # この関数は基本使用しない。将来的に削除する可能性あり。
     def show_all(self):
+        """
+        :return: None
+        """
         for i in self.food_list:
             print(i.name, i.cal, i.protein, i.fat, i.carbohydrate)
 
@@ -275,9 +299,9 @@ class Meals:
     def __init__(self, date=None, food_id=0):
         self.date = date
         self.food_id = food_id
-        print("Meals_class_init")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ui = AllWithEventActions()
+    ui = Start()
     app.exec_()
