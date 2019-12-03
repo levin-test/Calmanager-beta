@@ -14,6 +14,7 @@ class Start:
 
 class EnvInfo:
     __connected_db_path = ""
+
     @classmethod
     def set_db_path(cls, db_path):
         """
@@ -36,9 +37,12 @@ class Example(QMainWindow):
     def __init__(self):
         super().__init__()
         self.statusBar().showMessage("Ready", 15000)
-        self.setGeometry(20, 20, 1080, 750)
+        self.setGeometry(200, 200, 1080, 750)
 
         # メニューバーにセットするアクションを準備
+        self.new_file_act = QAction("New...", self)
+        self.new_file_act.setShortcut("Ctrl+N")
+
         self.open_act = QAction(
             self.style().standardIcon(QStyle.SP_DialogOpenButton), "Open", self
         )
@@ -47,7 +51,7 @@ class Example(QMainWindow):
         self.open_recent_act = QAction(
             self.style().standardIcon(QStyle.SP_DialogOpenButton), "Open Recent", self
         )
-        self.open_recent_act.setShortcut("Ctrl+O")
+        self.open_recent_act.setShortcut("Ctrl+B")
 
         self.close_act = QAction(
             self.style().standardIcon(QStyle.SP_DirClosedIcon), "Close", self
@@ -71,6 +75,8 @@ class Example(QMainWindow):
         self.menu_action = self.menu_bar.addMenu("Action")
 
         # Menuをセットする
+        self.menu_file.addAction(self.new_file_act)
+
         self.menu_file.addAction(self.open_act)
         self.open_act.triggered.connect(self.open)
 
@@ -92,6 +98,8 @@ class Example(QMainWindow):
         self.tab_widget.setTabEnabled(0, False)
         self.setCentralWidget(self.tab_widget)
 
+        # for signal test
+        a = self.tab_widget.findChild(TabAddData)
 
     def change_window_title(self, file_path):
         EnvInfo.set_db_path(file_path)
@@ -105,6 +113,7 @@ class Example(QMainWindow):
             self.setWindowTitle("rabit{}".format(db_name))
             message = "Disconnected!"
             self.statusBar().showMessage(message, 15000)
+
 
     def open(self):
         select_file = QFileDialog.getOpenFileName(filter="SQLite Files (*.sqlite)")
@@ -126,6 +135,11 @@ class Example(QMainWindow):
     @staticmethod
     def quit():
         sys.exit()
+
+
+
+    def signaltest(self):
+        self.statusBar().showMessage("signal!!!")
 
 
 class Tabtest(QWidget):
@@ -162,39 +176,61 @@ class TabAddData(QWidget):
         self.edit_c = QLineEdit()
         self.edit_d = QLineEdit()
         self.edit_e = QLineEdit()
+        self.edit_date = QDateEdit()
+        self.edit_date.setDate(datetime.date.today())
         format_layout = QFormLayout()
         format_layout.addRow(self.label_a, self.edit_a)
         format_layout.addRow(self.label_b, self.edit_b)
         format_layout.addRow(self.label_c, self.edit_c)
         format_layout.addRow(self.label_d, self.edit_d)
         format_layout.addRow(self.label_e, self.edit_e)
+        format_layout.addRow("date", self.edit_date)
 
-        btn_register = QPushButton("Register")
-        btn_register.clicked.connect(self.register)
-        btn_register.setMaximumSize(100, 50)
+        self.checkbox_food_register = QCheckBox('as frequent food')
+        self.checkbox2 = QCheckBox("Test2")
+        r_vertical_box = QVBoxLayout()
+        r_vertical_box.addWidget(self.checkbox_food_register)
+        r_vertical_box.addWidget(self.checkbox2)
+
+        self.btn_register = QPushButton("Register")
+        self.btn_register.clicked.connect(self.register)
+        self.btn_register.setMaximumSize(100, 50)
 
         btn_clear = QPushButton("Clear")
         btn_clear.clicked.connect(self.clear_content)
+        btn_clear.setMaximumSize(100, 50)
 
-        vertical_box = QVBoxLayout()
-        vertical_box.addWidget(btn_register, alignment=QtCore.Qt.AlignRight)
+        bottom_vertical_box = QVBoxLayout()
+        bottom_vertical_box.addWidget(btn_clear, alignment=QtCore.Qt.AlignRight)
+        bottom_vertical_box.addWidget(self.btn_register, alignment=QtCore.Qt.AlignRight)
 
         root = QVBoxLayout()
-        root.addLayout(format_layout)
-        root.addLayout(vertical_box)
+        input_space = QVBoxLayout()
+        input_space.addLayout(format_layout)
+        input_space.addLayout(r_vertical_box)
+        root.addLayout(input_space)
+        root.addLayout(bottom_vertical_box)
         self.setLayout(root)
 
     def register(self):
         input_name = self.edit_a.text()
-        input_cal = int(self.edit_b.text())
-        input_pro = int(self.edit_c.text())
-        input_fat = int(self.edit_d.text())
-        input_carbo = int(self.edit_e.text())
+        try:
+            input_cal = int(self.edit_b.text())
+            input_pro = int(self.edit_c.text())
+            input_fat = int(self.edit_d.text())
+            input_carbo = int(self.edit_e.text())
+        except ValueError:
+            QMessageBox.warning(self, "Type Error!", "Please Check")
+            return None
         food = Food(input_name, input_cal, input_pro, input_fat, input_carbo)
         food.save_food_info(EnvInfo.get_db_path())
+
+        if self.checkbox2.isChecked():
+            print('CheckedAction')
         self.clear_content()
 
     def clear_content(self):
+        self.parent().parent().parent().signaltest()
         self.edit_a.setText(None)
         self.edit_b.setText(None)
         self.edit_c.setText(None)
